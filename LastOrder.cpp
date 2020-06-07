@@ -157,22 +157,22 @@ void LastOrder::init_chessStatus() {
                                             this->chessStatus[p1][p2][p3][p4][p5][p6]=block4;
                                     }
                                     //黑眠3
-                                    if(x==3&&y==0){
+                                    if(x==0&&y==3){
                                         if(this->chessStatus[p1][p2][p3][p4][p5][p6]==0)
                                             this->chessStatus[p1][p2][p3][p4][p5][p6]=BLOCK3;
                                     }
                                     //白眠3
-                                    if(x==0&&y==3){
+                                    if(x==3&&y==0){
                                         if(this->chessStatus[p1][p2][p3][p4][p5][p6]==0)
                                             this->chessStatus[p1][p2][p3][p4][p5][p6]=block3;
                                     }
                                     //黑眠2
-                                    if(x==2&&y==0){
+                                    if(x==0&&y==2){
                                         if(this->chessStatus[p1][p2][p3][p4][p5][p6]==0)
                                             this->chessStatus[p1][p2][p3][p4][p5][p6]=BLOCK2;
                                     }
                                     //白眠2
-                                    if(x==0&&y==2){
+                                    if(x==2&&y==0){
                                         if(this->chessStatus[p1][p2][p3][p4][p5][p6]==0)
                                             this->chessStatus[p1][p2][p3][p4][p5][p6]=block2;
                                     }
@@ -219,7 +219,7 @@ void LastOrder::init_chessStatus() {
 
 int LastOrder::evaluation(int board[SIZE][SIZE]) {
 //    权值
-    int weight[17]={0,550000000,-100000000,50000,-1000000,400,-100000,400,-10000,20,-50,20,-50,1,-3,1,-3};
+    int weight[17]={0, 1000000, -10000000, 50000, -100000, 400, -100000, 400, -8000, 20, -50, 20, -50, 1, -3, 1, -3};
 //    四个方向的棋形记录，每个位置对应一个权重值，如果包含一个该权重棋形则+1
     int shapeRecord[4][17] = {{0}};
 //    大棋盘边界初始化
@@ -242,7 +242,7 @@ int LastOrder::evaluation(int board[SIZE][SIZE]) {
         for (int j = 1; j < SIZE - 3; j++) {
             int type = this->chessStatus[bigBoard[i][j]][bigBoard[i][j+1]][bigBoard[i][j+2]][bigBoard[i][j+3]][bigBoard[i][j+4]][bigBoard[i][j+5]];
             shapeRecord[0][type] ++;
-        }
+          }
     }
 //    竖向棋形统计
     for (int i = 0; i < SIZE - 3; i ++) {
@@ -252,14 +252,14 @@ int LastOrder::evaluation(int board[SIZE][SIZE]) {
         }
     }
 //    沿着左下→右上棋形统计
-    for (int i = SIZE; i < SIZE - 3; i --) {
+    for (int i = SIZE - 1; i > 4; i --) {
         for (int j = 0; j < SIZE - 3; j ++) {
             int type = this->chessStatus[bigBoard[i][j]][bigBoard[i-1][j+1]][bigBoard[i-2][j+2]][bigBoard[i-3][j+3]][bigBoard[i-4][j+4]][bigBoard[i-5][j+5]];
             shapeRecord[2][type] ++;
         }
     }
-//    沿着右上→左下棋形统计
-    for (int i = 0; i< SIZE - 3; i ++) {
+//    沿着左上→右下棋形统计
+    for (int i = 0; i < SIZE - 3; i ++) {
         for (int j = 0; j < SIZE - 3; j ++) {
             int type = this->chessStatus[bigBoard[i][j]][bigBoard[i+1][j+1]][bigBoard[i+2][j+2]][bigBoard[i+3][j+3]][bigBoard[i+4][j+4]][bigBoard[i+5][j+5]];
             shapeRecord[3][type] ++;
@@ -276,29 +276,129 @@ int LastOrder::evaluation(int board[SIZE][SIZE]) {
     return score;
 }
 
-void LastOrder::playChess(int board[SIZE][SIZE], int &x, int &y) {
-//    建立临时棋盘用来落子
-    int tempBoard[SIZE][SIZE];
-    int myColor = this->aiColor;
-    int score, highScore = -999999999;
-    for (int i = 0; i < SIZE; i ++) {
-        for (int j = 0; j < SIZE; j ++)
-            tempBoard[i][j] = board[i][j];
-    }
-//    模拟落子并对落子后的局势进行评估
+void copyBoard(int board[SIZE][SIZE], int sameBoard[SIZE][SIZE]) {
     for (int i = 0; i < SIZE; i ++) {
         for (int j = 0; j < SIZE; j ++) {
-//            修改落子
-//            如果有子，跳过
-            if (tempBoard[i][j]) continue;
-            tempBoard[i][j] = myColor;
-            score = this->evaluation(tempBoard);
-            if (score >= highScore) {
-                highScore = score;
-                x = i, y = j;
-            }
-//            还原
-            tempBoard[i][j] = board[i][j];
+            sameBoard[i][j] = board[i][j];
         }
     }
+}
+
+void LastOrder::playChess(int board[SIZE][SIZE], int &x, int &y) {
+    int a = maxMinSearch(board, DEPTH, -INT_MAX, INT_MAX);
+    x = this->decision.pos.x;
+    y = this->decision.pos.y;
+}
+
+Points LastOrder::localSearch(int board[SIZE][SIZE]) {
+    Points bestPoint{};
+    bool localBoard[SIZE][SIZE]  = {{false}};
+    int weight[SIZE][SIZE] = {{0}};
+
+//    局部搜索。找出棋盘上局部搜索匹配的位置，匹配规则为已下棋子周围八个方向的三格
+    for (int i = 0; i < SIZE; i ++) {
+        for (int j = 0; j < SIZE; j ++) {
+            if (board[i][j] != 0) {
+                for (int k = -3; k < 3; k ++) {
+//                    横向
+                    if (board[i][j + k] == 0 && (j + k < 15) && (j + k >= 0)) localBoard[i][j + k] = true;
+//                    纵向
+                    if (board[i + k][j] == 0 && (i + k < 15) && (i + k) >= 0) localBoard[i + k][j] = true;
+//                    斜向
+                    if (board[i + k][j + k] == 0 && (i + k < 15) && (i + k) >= 0 && (j + k < 15) && (j + k >= 0))
+                        localBoard[i + k][j + k] = true;
+                }
+            }
+        }
+    }
+
+//    启发式评估，在局部搜索结果后模拟落子并对落子后结果打分。
+    for (int i = 0; i < SIZE; i ++) {
+        for (int j = 0; j < SIZE; j ++) {
+            weight[i][j] = INT_MIN;
+            if (localBoard[i][j]) {
+                board[i][j] = this->aiColor;
+                weight[i][j] = evaluation(board);
+                board[i][j] = 0;
+            }
+        }
+    }
+
+    int w;
+    Pos p = Pos();
+    for (int k = 0; k < AN; k ++) {
+        w = INT_MIN;
+        for (int i = 0; i < SIZE; i ++) {
+            for (int j = 0; j < SIZE; j ++) {
+                if (weight[i][j] > w) {
+                    w = weight[i][j];
+                    p.x = i, p.y = j;
+                }
+            }
+            bestPoint.pos[k] = p, bestPoint.score[k] = w;
+            weight[p.x][p.y] = INT_MIN; //将最大值去掉，寻找第二大的点。
+        }
+    }
+
+    return bestPoint;
+}
+
+
+void reverseBoard(int board[SIZE][SIZE], int rboard[SIZE][SIZE]) {
+    for (int i = 0; i < SIZE; i ++) {
+        for (int j = 0; j < SIZE; j ++) {
+            if (board[i][j] == BLACK) rboard[i][j] = WHITE;
+            if (board[i][j] == WHITE) rboard[i][j] = BLACK;
+        }
+    }
+}
+
+
+int LastOrder::maxMinSearch(int (*board)[SIZE], int depth, int alpha, int beta) {
+//    迭代深度为0，直接返回分析结果
+    if (depth == 0) {
+        Points p;
+        p = this->localSearch(board);
+//        cout << "Depth: " << depth << " Score: " << p.score[0] << " Pos: " << p.pos[0].x << ", " << p.pos[0].y  << endl;
+        return p.score[0];
+    }
+    else if (depth % 2 == 0) { //max层
+        int sameBoard[SIZE][SIZE] = {{0}};
+        copyBoard(board, sameBoard);
+        Points p = this->localSearch(board);
+        for (int i = 0; i < AN; i ++) {
+            sameBoard[p.pos[i].x][p.pos[i].y] = aiColor; //模拟落子
+            int a = this->maxMinSearch(sameBoard, depth - 1, alpha, beta);
+            sameBoard[p.pos[i].x][p.pos[i].y] = 0;
+            if (depth == DEPTH)
+                cout << "Depth: " << depth << " Score: " << a << " Pos: " << p.pos[i].x << ", " << p.pos[i].y <<endl;
+            if (a > alpha) {
+                alpha = a;
+                if (depth == DEPTH)  // 顶层情况，一旦找到最大的alpha，做出决策
+                    this->decision.pos.x = p.pos[i].x, this->decision.pos.y = p.pos[i].y, this->decision.score = p.score[i];
+
+            }
+            if (beta <= alpha) break; //剪枝
+        }
+        return alpha;
+    }
+    else if (depth % 2 == 1) { //min层
+        int rboard[SIZE][SIZE] = {{0}}; // 反转棋盘
+        int sameBoard[SIZE][SIZE] = {{0}};
+        reverseBoard(board, rboard);
+        copyBoard(board, sameBoard);
+
+        Points p = this->localSearch(rboard); //寻找对于敌方的最佳落子点
+        for (int i = 0; i < AN; i ++) {
+            sameBoard[p.pos[i].x][p.pos[i].y] = this->humColor;
+            int a = maxMinSearch(sameBoard, depth - 1, alpha, beta);
+            sameBoard[p.pos[i].x][p.pos[i].y] = 0;
+            if (a < beta) beta = a;
+            if (beta <= alpha) break; //剪枝
+        }
+        if (depth == DEPTH - 1)
+            cout << "Depth: " << depth << " Score: " << beta << endl;
+        return beta;
+    }
+
 }
