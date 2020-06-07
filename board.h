@@ -6,9 +6,12 @@
 #define FIVE_CHESS_BOARD_H
 #define CHESS 5
 //标准棋盘15
-#define SIZE 9
+#define SIZE 15
 #define WHITE 1
 #define BLACK 2
+#define AICOLOR 2
+#define HUMCOLOR 1
+
 
 
 class Board {
