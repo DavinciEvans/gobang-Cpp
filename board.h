@@ -17,10 +17,11 @@
 class Board {
 public:
     int win = 0;
+    int cursorPos[2] = {SIZE/2, SIZE/2};
     int board[SIZE][SIZE] = {{0}};
     int place(int x, int y, int color);
     int check(int x, int y, int color, int length, int directX, int directY);
-    void print();
+    void print(bool cur);
 };
 
 

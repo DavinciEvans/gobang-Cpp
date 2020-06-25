@@ -7,6 +7,11 @@
 
 #include "board.h"
 
+#include <iostream>
+#include "LastOrder.h"
+
+using namespace std;
+
 class Loops {
 public:
     Board board;

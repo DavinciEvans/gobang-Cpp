@@ -219,7 +219,7 @@ void LastOrder::init_chessStatus() {
 
 int LastOrder::evaluation(int board[SIZE][SIZE]) {
 //    权值
-    int weight[17]={0, 1000000, -10000000, 50000, -100000, 400, -100000, 400, -8000, 20, -50, 20, -50, 1, -3, 1, -3};
+    int weight[17]={0, 10000000, -10000000, 50000, -1000000, 400, -1000000, 400, -8000, 20, -50, 20, -50, 1, -3, 1, -3};
 //    四个方向的棋形记录，每个位置对应一个权重值，如果包含一个该权重棋形则+1
     int shapeRecord[4][17] = {{0}};
 //    大棋盘边界初始化
@@ -242,7 +242,7 @@ int LastOrder::evaluation(int board[SIZE][SIZE]) {
         for (int j = 1; j < SIZE - 3; j++) {
             int type = this->chessStatus[bigBoard[i][j]][bigBoard[i][j+1]][bigBoard[i][j+2]][bigBoard[i][j+3]][bigBoard[i][j+4]][bigBoard[i][j+5]];
             shapeRecord[0][type] ++;
-          }
+        }
     }
 //    竖向棋形统计
     for (int i = 0; i < SIZE - 3; i ++) {
@@ -285,7 +285,7 @@ void copyBoard(int board[SIZE][SIZE], int sameBoard[SIZE][SIZE]) {
 }
 
 void LastOrder::playChess(int board[SIZE][SIZE], int &x, int &y) {
-    int a = maxMinSearch(board, DEPTH, -INT_MAX, INT_MAX);
+    int a = maxMinSearch(board, DEPTH, INT_MIN, INT_MAX);
     x = this->decision.pos.x;
     y = this->decision.pos.y;
 }
@@ -359,7 +359,6 @@ int LastOrder::maxMinSearch(int (*board)[SIZE], int depth, int alpha, int beta) 
     if (depth == 0) {
         Points p;
         p = this->localSearch(board);
-//        cout << "Depth: " << depth << " Score: " << p.score[0] << " Pos: " << p.pos[0].x << ", " << p.pos[0].y  << endl;
         return p.score[0];
     }
     else if (depth % 2 == 0) { //max层
@@ -368,10 +367,10 @@ int LastOrder::maxMinSearch(int (*board)[SIZE], int depth, int alpha, int beta) 
         Points p = this->localSearch(board);
         for (int i = 0; i < AN; i ++) {
             sameBoard[p.pos[i].x][p.pos[i].y] = aiColor; //模拟落子
+//            如果落子后获胜，则直接返回
+
             int a = this->maxMinSearch(sameBoard, depth - 1, alpha, beta);
             sameBoard[p.pos[i].x][p.pos[i].y] = 0;
-            if (depth == DEPTH)
-                cout << "Depth: " << depth << " Score: " << a << " Pos: " << p.pos[i].x << ", " << p.pos[i].y <<endl;
             if (a > alpha) {
                 alpha = a;
                 if (depth == DEPTH)  // 顶层情况，一旦找到最大的alpha，做出决策
@@ -396,8 +395,6 @@ int LastOrder::maxMinSearch(int (*board)[SIZE], int depth, int alpha, int beta) 
             if (a < beta) beta = a;
             if (beta <= alpha) break; //剪枝
         }
-        if (depth == DEPTH - 1)
-            cout << "Depth: " << depth << " Score: " << beta << endl;
         return beta;
     }
 

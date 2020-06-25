@@ -7,6 +7,7 @@
 #define DEPTH 6
 #define AN 10
 #include "board.h"
+#include "Loops.h"
 #include <iostream>
 using namespace std;
 
@@ -40,6 +41,7 @@ public:
     int evaluation(int board[SIZE][SIZE]);
     Points localSearch(int board[SIZE][SIZE]);
     int maxMinSearch(int board[SIZE][SIZE], int depth, int alpha, int beta);
+    void allCheck();
 };
 
 

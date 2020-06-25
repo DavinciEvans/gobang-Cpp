@@ -23,7 +23,6 @@ Simulation::Simulation() {
     board.board[7][4] = WHITE;
     board.board[5][3] = BLACK;
     board.board[4][2] = WHITE;
-    board.print();
     this->print(ai.evaluation(board.board));
     Points p = ai.localSearch(board.board);
     for (int i = 0; i < AN; i ++) {

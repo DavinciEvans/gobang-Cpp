@@ -32,7 +32,7 @@ int Board::check(int x, int y, int color, int length, int directX, int directY) 
             for (int j=-1; j<2; j++){
 //                遍历到自己或者是颜色不一致的棋子，跳过
                 if ((i == 0 && j == 0) || (this->board[x+i][y+j] != color))
-                continue;
+                    continue;
 //                否则递归往下检查
                 else {
                     nowLength = this->check(x+directX, y+directY, color, length+1, i, j);
@@ -51,10 +51,10 @@ int Board::check(int x, int y, int color, int length, int directX, int directY) 
     return 0;
 }
 
-void Board::print() {
-    const string white=" ○ ",  black =" ● ";
-    const string LT   =" ┌ ",  TOP   =" ┬ ", RT   =" ┐ ";
-    const string LEFT =" ├ ",  CENTER=" ┼ ", RIGHT=" ┤ ";
+void Board::print(bool cur) {
+    const string white=" ○ ", black =" ● ", cursor = " + ";
+    const string LT   =" ┌ ", TOP   =" ┬ ", RT   =" ┐ ";
+    const string LEFT =" ├ ", CENTER =" ┼ ", RIGHT=" ┤ ";
     const string LF   =" └ ", FOOT  =" ┴ ",  RF   =" ┘ ";
     const string SPACE="   ";
 
@@ -79,6 +79,12 @@ void Board::print() {
             else if (piece == WHITE) display[2*i+1][2*j+1] = white;
             else if (piece == BLACK) display[2*i+1][2*j+1] = black;
         }
+    }
+
+//    繪製光標
+    if (cur) {
+        int row = this->cursorPos[0], col = this->cursorPos[1];
+        display[2 * row + 1][2 * col + 1] = cursor;
     }
 //    输出
     for (int i = 0; i < 2 * SIZE + 1; i ++) {
