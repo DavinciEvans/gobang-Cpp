@@ -26,8 +26,9 @@
 //白1，黑2，边界3
 //电脑执黑
 
-LastOrder::LastOrder() {
+LastOrder::LastOrder(bool debug) {
     this->init_chessStatus();
+    this->debugMode = debug;
 }
 
 void LastOrder::init_chessStatus() {
@@ -219,7 +220,7 @@ void LastOrder::init_chessStatus() {
 
 int LastOrder::evaluation(int board[SIZE][SIZE]) {
 //    权值
-    int weight[17]={0, 10000000, -10000000, 50000, -1000000, 400, -1000000, 400, -8000, 20, -50, 20, -50, 1, -3, 1, -3};
+    int weight[17]={0, 10000000, -10000000, 50000, -10000000, 400, -1000000, 400, -8000, 20, -50, 20, -50, 1, -3, 1, -3};
 //    四个方向的棋形记录，每个位置对应一个权重值，如果包含一个该权重棋形则+1
     int shapeRecord[4][17] = {{0}};
 //    大棋盘边界初始化
@@ -276,15 +277,7 @@ int LastOrder::evaluation(int board[SIZE][SIZE]) {
     return score;
 }
 
-void copyBoard(int board[SIZE][SIZE], int sameBoard[SIZE][SIZE]) {
-    for (int i = 0; i < SIZE; i ++) {
-        for (int j = 0; j < SIZE; j ++) {
-            sameBoard[i][j] = board[i][j];
-        }
-    }
-}
-
-void LastOrder::playChess(int board[SIZE][SIZE], int &x, int &y) {
+void LastOrder::playChess(Board board, int &x, int &y) {
     int a = maxMinSearch(board, DEPTH, INT_MIN, INT_MAX);
     x = this->decision.pos.x;
     y = this->decision.pos.y;
@@ -304,9 +297,12 @@ Points LastOrder::localSearch(int board[SIZE][SIZE]) {
                     if (board[i][j + k] == 0 && (j + k < 15) && (j + k >= 0)) localBoard[i][j + k] = true;
 //                    纵向
                     if (board[i + k][j] == 0 && (i + k < 15) && (i + k) >= 0) localBoard[i + k][j] = true;
-//                    斜向
+//                    斜向（左上到右下）
                     if (board[i + k][j + k] == 0 && (i + k < 15) && (i + k) >= 0 && (j + k < 15) && (j + k >= 0))
                         localBoard[i + k][j + k] = true;
+//                    斜向（左下到右上）
+                    if (board[i - k][j + k] == 0 && (i - k < 15) && (i - k) >= 0 && (j + k < 15) && (j + k >= 0))
+                        localBoard[i - k][j + k] = true;
                 }
             }
         }
@@ -331,13 +327,17 @@ Points LastOrder::localSearch(int board[SIZE][SIZE]) {
         for (int i = 0; i < SIZE; i ++) {
             for (int j = 0; j < SIZE; j ++) {
                 if (weight[i][j] > w) {
+//                    if (depth == DEPTH && i == 4 && j == 4)
+//                        cout << "4 4 weight : " << weight[i][j] << endl;
                     w = weight[i][j];
                     p.x = i, p.y = j;
                 }
             }
-            bestPoint.pos[k] = p, bestPoint.score[k] = w;
-            weight[p.x][p.y] = INT_MIN; //将最大值去掉，寻找第二大的点。
+//            if (depth == DEPTH)
+//                cout << "This LOOP result: " << w << endl;
         }
+        bestPoint.pos[k] = p, bestPoint.score[k] = w;
+        weight[p.x][p.y] = INT_MIN; //将最大值去掉，寻找第二大的点。
     }
 
     return bestPoint;
@@ -354,23 +354,27 @@ void reverseBoard(int board[SIZE][SIZE], int rboard[SIZE][SIZE]) {
 }
 
 
-int LastOrder::maxMinSearch(int (*board)[SIZE], int depth, int alpha, int beta) {
+int LastOrder::maxMinSearch(Board board, int depth, int alpha, int beta) {
+//    if (debugMode && depth == DEPTH) cout << depth << endl;
 //    迭代深度为0，直接返回分析结果
     if (depth == 0) {
         Points p;
-        p = this->localSearch(board);
+        p = this->localSearch(board.board);
         return p.score[0];
     }
     else if (depth % 2 == 0) { //max层
-        int sameBoard[SIZE][SIZE] = {{0}};
-        copyBoard(board, sameBoard);
-        Points p = this->localSearch(board);
+        Board sameBoard(board);
+        Points p = this->localSearch(board.board);
         for (int i = 0; i < AN; i ++) {
-            sameBoard[p.pos[i].x][p.pos[i].y] = aiColor; //模拟落子
-//            如果落子后获胜，则直接返回
-
+            sameBoard.board[p.pos[i].x][p.pos[i].y] = aiColor; //模拟落子
+//            如果模拟落子能直接获胜，则直接返回
+//            if (sameBoard.check(p.pos[i].x, p.pos[i].y, aiColor, 0, 0, 0) && depth == DEPTH) {
+//                cout << "I Find the Answer!" << endl;
+//                this->decision.pos.y = p.pos[i].y, this->decision.score = p.score[i];
+//                return 0;
+//            }
             int a = this->maxMinSearch(sameBoard, depth - 1, alpha, beta);
-            sameBoard[p.pos[i].x][p.pos[i].y] = 0;
+            sameBoard.board[p.pos[i].x][p.pos[i].y] = 0;
             if (a > alpha) {
                 alpha = a;
                 if (depth == DEPTH)  // 顶层情况，一旦找到最大的alpha，做出决策
@@ -382,20 +386,19 @@ int LastOrder::maxMinSearch(int (*board)[SIZE], int depth, int alpha, int beta) 
         return alpha;
     }
     else if (depth % 2 == 1) { //min层
-        int rboard[SIZE][SIZE] = {{0}}; // 反转棋盘
-        int sameBoard[SIZE][SIZE] = {{0}};
-        reverseBoard(board, rboard);
-        copyBoard(board, sameBoard);
+        Board rboard;
+ //     反转棋盘
+        Board sameBoard(board);
+        reverseBoard(board.board, rboard.board);
 
-        Points p = this->localSearch(rboard); //寻找对于敌方的最佳落子点
+        Points p = this->localSearch(rboard.board); //寻找对于敌方的最佳落子点
         for (int i = 0; i < AN; i ++) {
-            sameBoard[p.pos[i].x][p.pos[i].y] = this->humColor;
+            sameBoard.board[p.pos[i].x][p.pos[i].y] = this->humColor;
             int a = maxMinSearch(sameBoard, depth - 1, alpha, beta);
-            sameBoard[p.pos[i].x][p.pos[i].y] = 0;
+            sameBoard.board[p.pos[i].x][p.pos[i].y] = 0;
             if (a < beta) beta = a;
             if (beta <= alpha) break; //剪枝
         }
         return beta;
     }
-
 }

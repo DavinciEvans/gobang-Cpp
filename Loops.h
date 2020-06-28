@@ -6,19 +6,22 @@
 #define FIVE_CHESS_LOOPS_H
 
 #include "board.h"
-
+#include "Debug.h"
 #include <iostream>
 #include "LastOrder.h"
+
+
 
 using namespace std;
 
 class Loops {
 public:
     Board board;
-    int turns = 1;
+    Debug debug;
+    int turns = 0;
     int firstHand = 1;
     int control(int color, int &x, int &y);
-    void messages(int color, int &x, int &y);
+    void messages(int color);
     void games();
     void allCheck();
 };

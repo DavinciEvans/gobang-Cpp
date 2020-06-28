@@ -87,7 +87,21 @@ void Board::print(bool cur) {
         display[2 * row + 1][2 * col + 1] = cursor;
     }
 //    输出
+//输出列号
+    cout << " ";
+    for (int i = 0; i < SIZE; i ++) {
+        if (i < 10)
+            cout << "     " << i ;
+        else cout << "    " << i ;
+    }
+    cout << endl;
     for (int i = 0; i < 2 * SIZE + 1; i ++) {
+//        输出行号
+        if (i % 2 != 0)
+            if (i / 2 < 10) cout << i / 2 << " " ;
+            else cout << i / 2 ;
+        else cout << "  " ;
+//        棋盘
         for (int j = 0; j < 2 * SIZE + 1; j++) {
             cout << display[i][j];
         }

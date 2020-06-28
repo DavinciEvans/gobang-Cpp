@@ -18,7 +18,7 @@ int getch();
 
 #ifdef Windows
 #include<conio.h>
-#define CLRSCR system("cls");
+#define CLRSCR system("cls")
 #endif
 
 #ifdef Linux
@@ -58,44 +58,65 @@ int kbhit(void)
 int Loops::control(int color, int &x, int &y) {
     int input;
     bool put = false;
-    while (!put && (input = getch()) != 'q') {
+    while (!put && (input = getch()) != 'l') {
         CLRSCR;
         int row = this->board.cursorPos[0], col = this->board.cursorPos[1];
-        if (input == 'w' || input == 's' || input == 'a' || input == 'd' || input == ' ') {
-            switch (input) {
-                case 'w': {
-                    if (row -1 >= 0) this->board.cursorPos[0] --;
-                    break;
-                }
-                case 's': {
-                    if (row + 1 < SIZE) this->board.cursorPos[0] ++;
-                    break;
-                }
-                case 'a': {
-                    if (col - 1 >= 0) this->board.cursorPos[1] --;
-                    break;
-                }
-                case 'd': {
-                    if (col + 1 < SIZE) this->board.cursorPos[1] ++;
-                    break;
-                }
-                case ' ': {
-                    if (this->board.place(row, col, color)) {
-                        put = true;
-                        x = row, y = col;
-                        break;
-                    }
-                    else cout << "this position is not legal" << endl;
-                    break;
-                }
-                default: break;
+        switch (input) {
+            case 'w': {
+                if (row -1 >= 0) this->board.cursorPos[0] --;
+                break;
             }
+            case 's': {
+                if (row + 1 < SIZE) this->board.cursorPos[0] ++;
+                break;
+            }
+            case 'a': {
+                if (col - 1 >= 0) this->board.cursorPos[1] --;
+                break;
+            }
+            case 'd': {
+                if (col + 1 < SIZE) this->board.cursorPos[1] ++;
+                break;
+            }
+            case ' ': {
+                if (this->board.place(row, col, color)) {
+                    put = true;
+                    x = row, y = col;
+                    break;
+                }
+                else cout << "this position is not legal" << endl;
+                break;
+            }
+            case 'b': {
+                CLRSCR;
+                debug.init(this->board);
+                debug.control();
+            }
+            case 'i': {
+                debug.save();
+                break;
+            }
+            case 'o': {
+                cout << "Reading the record..." << endl;
+                Board tempBoard;
+                try {
+                    tempBoard = debug.read();
+                    this->board = tempBoard;
+                    this->turns = debug.turns;
+                }
+                catch (string e) {
+                    cout << "Reading the record error." << endl;
+                }
+                break;
+            }
+            default:
+                break;
         }
         this->board.print(true);
-        this->messages(color, x, y);
+        this->messages(color);
 
     }
-    if (input == 'q') {
+    if (input == 'l') {
         CLRSCR;
         exit(1);
     }
@@ -110,20 +131,24 @@ void Loops::games() {
     while (!this->board.win || this->turns == SIZE * SIZE) {
         if (nowColor == lastOrder.aiColor) {
             this->board.print(false);
-            this->messages(nowColor, posX, posY);
             cout << endl;
             cout << "Last Order is thinking..." << endl;
-            lastOrder.playChess(this->board.board, posX, posY);
+            lastOrder.playChess(this->board, posX, posY);
             this->board.place(posX, posY, lastOrder.aiColor);
             CLRSCR;
         }
         else {
             this->board.print(true);
-            this->messages(nowColor, posX, posY);
+            this->messages(nowColor);
             this->control(nowColor, posX, posY);
             CLRSCR;
         }
         this->allCheck();
+        //        debug¼ÇÂ¼
+        this->debug.history[this->turns][0] = posX;
+        this->debug.history[this->turns][1] = posY;
+        this->debug.history[this->turns][2] = nowColor;
+        this->debug.nowTurns ++;
         this->turns ++;
         nowColor = nowColor == WHITE ? BLACK : WHITE;
     }
@@ -131,24 +156,30 @@ void Loops::games() {
     this->board.print(false);
     if (this->turns == SIZE * SIZE) cout << "There are no positions to put the chess, it is tie.";
     if (board.win == WHITE) cout << "White get the champion!!" << endl;
-    else cout << "Black get the champion!!" << endl << endl;
-    cout << "Game over" << endl << endl;
-    cout << "print any key to exit." << endl;
+    else cout << "Black get the champion!!" << endl;
+    cout << "Game over" << endl;
+    cout << "enter any key to exit." << endl;
     getch();
     CLRSCR;
     exit(1);
 }
 
-void Loops::messages(int color, int &x, int &y) {
+void Loops::messages(int color) {
     cout << "- - - - - - - - - - - - - - " << endl;
-    if (this->turns == 1) {
+    if (this->turns == 0)
         cout << "Game Start" << endl;
-        cout << "Use w a s d to control the cursor,use space to put the chess , use q to exit." << endl;
-    }
-    cout << endl;
-    if (color == 1)
+    cout << "Move: W A S D" << endl;
+    cout << "Put: Space" << endl;
+    cout << "Leave: L" << endl;
+    cout << "- - - - - - - - - - - - " << endl;
+    if (color == WHITE)
         cout << "White turn" << endl;
     else cout << "Black turn" << endl;
+    if (turns != 0) {
+        int x = debug.history[debug.nowTurns - 1][0], y = debug.history[debug.nowTurns - 1][1];
+        cout << "Last pos: " << x << " " << y << endl;
+    }
+
     cout << endl;
 }
 
@@ -156,7 +187,8 @@ void Loops::allCheck() {
     for (int i = 0; i < SIZE; i ++) {
         for (int j = 0; j < SIZE; j ++) {
             if (!this->board.board[i][j]) continue;
-            else this->board.check(i, j, this->board.board[i][j], 0, 0, 0);
+            else this->
+            board.check(i, j, this->board.board[i][j], 0, 0, 0);
         }
     }
 }
